@@ -19,12 +19,12 @@ static void OutputErrorMessage(DWORD err, const wchar_t *action) {
 
     if (len) {
         if (debug) {
-            std::wcerr << L"ERROR: " << action << L" - " << errorText << std::endl;
+            std::wcerr << L"ERROR: " << action << L" - " << errorText << L"\n";
         } else {
-            std::wcerr << L"ERROR: " << errorText << std::endl;
+            std::wcerr << L"ERROR: " << errorText << L"\n";
         }
     } else {
-        std::wcerr << L"ERROR: unknown" << std::endl;
+        std::wcerr << L"ERROR: unknown" << L"\n";
     }
 }
 
@@ -109,20 +109,28 @@ int wmain (int argc, wchar_t *argv[]) {
     PROCESS_INFORMATION pi = {};
     CheckWin32(CreateProcessW(progid.c_str(), cmdline.data(), nullptr, nullptr, false, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, &si.StartupInfo, &pi), L"CreateProcessW");
 
-    const int maxtime = 30000;
+    const int maxtime = 20000;
     const int timeout = 500;
     DWORD res = 0;
 
-    Sleep(timeout);
-
-    int timespent = timeout;
+    int timespent = 0;
     while (timespent < maxtime) {
-        timespent -= timeout;
+        timespent += timeout;
         res = WaitForSingleObject(pi.hProcess, timeout);
         if (res != WAIT_TIMEOUT) {
-            if (debug && res != WAIT_OBJECT_0) OutputErrorMessage(res, L"WaitForSingleObject");
             break;
         }
+    }
+
+    if (timespent >= maxtime) {
+        if (res != WAIT_OBJECT_0) {
+            const int forced_exit_status_code = 1;
+            CheckWin32(TerminateProcess(pi.hProcess, forced_exit_status_code), L"TerminateProcess");
+        }
+
+        std::wcerr << "Maximum time elapsed\n";
+    } else if (debug && res != WAIT_OBJECT_0) {
+        OutputErrorMessage(res, L"WaitForSingleObject");
     }
 
     CloseHandle(pi.hProcess);
