@@ -6,6 +6,12 @@
 namespace cewrapper
 {
 
+struct DirAccess
+{
+    std::wstring path;
+    uint32_t rights;
+};
+
 struct Config
 {
     bool debugging{};
@@ -14,10 +20,14 @@ struct Config
     int loopwait_ms{ 500 };
     std::wstring progid{};
     std::vector<std::wstring> args{};
+    std::vector<DirAccess> allowed_dirs{};
 
     void initFromArguments(int argc, wchar_t *argv[]);
 
     static Config &get();
+
+private:
+    void loadFromFile(const std::wstring_view file);
 };
 
 }; // namespace cewrapper

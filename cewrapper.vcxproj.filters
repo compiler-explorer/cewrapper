@@ -10,6 +10,7 @@
     <ClInclude Include="include\access.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="3rdparty\nlohmann\json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\checks.cpp">

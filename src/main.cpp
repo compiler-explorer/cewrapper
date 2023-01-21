@@ -69,10 +69,18 @@ int wmain(int argc, wchar_t *argv[])
     // access to its own directory
     {
         auto dir = fs::path(cewrapper::Config::get().progid).parent_path().wstring();
-        cewrapper::grant_access(static_cast<wchar_t *>(sec_cap.AppContainerSid), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+        if (cewrapper::Config::get().debugging)
+            std::wcout << "granting access to: " << dir << "\n";
+        cewrapper::grant_access(static_cast<wchar_t *>(sec_cap.AppContainerSid), dir.data(),
+                                GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
 
-    // todo: add more directories to grant access to
+    for (auto &allowed : cewrapper::Config::get().allowed_dirs)
+    {
+        if (cewrapper::Config::get().debugging)
+            std::wcout << "granting access to: " << allowed.path << "\n";
+        cewrapper::grant_access(static_cast<wchar_t *>(sec_cap.AppContainerSid), allowed.path.data(), allowed.rights);
+    }
 
     std::wstring cmdline = L"\"" + std::wstring(cewrapper::Config::get().progid.c_str()) + L"\"";
     for (const auto &arg : cewrapper::Config::get().args)

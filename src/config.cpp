@@ -1,4 +1,7 @@
 #include "../include/config.hpp"
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <windows.h>
 
 cewrapper::Config _main_config;
 
@@ -24,12 +27,17 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
 
         if (arg.starts_with(L"--time_limit="))
         {
-            cewrapper::Config::get().time_limit_ms = svtoi(arg.substr(13)) * 1000;
+            this->time_limit_ms = svtoi(arg.substr(13)) * 1000;
             arg_idx++;
         }
         else if (arg.compare(L"-v") == 0)
         {
-            cewrapper::Config::get().debugging = true;
+            this->debugging = true;
+            arg_idx++;
+        }
+        else if (arg.starts_with(L"--config="))
+        {
+            this->loadFromFile(arg.substr(9));
             arg_idx++;
         }
         else
@@ -38,8 +46,46 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
         }
     }
 
-    cewrapper::Config::get().progid = argv[arg_idx];
-    cewrapper::Config::get().args.clear();
+    this->progid = argv[arg_idx];
+    this->args.clear();
     for (; arg_idx < argc; ++arg_idx)
-        cewrapper::Config::get().args.push_back(argv[arg_idx]);
+        this->args.push_back(argv[arg_idx]);
+}
+
+void cewrapper::Config::loadFromFile(const std::wstring_view file)
+{
+    using json = nlohmann::json;
+
+    std::ifstream jsonfile(file);
+    json data = json::parse(jsonfile);
+
+    auto allowed = data["allowed"];
+    for (auto dir : allowed)
+    {
+        uint32_t rights{ GENERIC_READ };
+        if (dir["rw"])
+            rights |= GENERIC_WRITE;
+
+        if (!dir["noexec"])
+            rights |= GENERIC_EXECUTE;
+
+        std::string path = dir["path"];
+
+        if (path.empty())
+            continue;
+
+        if (path.length() >= MAXINT)
+            continue;
+
+        // assume json file is in utf8
+        wchar_t *buffer = static_cast<wchar_t *>(malloc(path.length()));
+        int convertedChars = MultiByteToWideChar(CP_UTF8, 0, path.data(), static_cast<int>(path.length()), reinterpret_cast<wchar_t *>(buffer), static_cast<int>(path.length()));
+        if (convertedChars <= 0)
+            throw std::exception("Could not read utf8 path from json file");
+
+        this->allowed_dirs.push_back({.path = std::wstring(buffer, convertedChars), .rights = rights});
+
+        //free(buffer); // this triggers a "HEAP CORRUPTION" according to MSVC
+        //  -> HEAP CORRUPTION DETECTED : after Normal block(#322) at 0x0000023E184AAC40. CRT detected that the application wrote to memory after end of heap buffer
+    }
 }
