@@ -108,6 +108,23 @@ int wmain (int argc, wchar_t *argv[]) {
 
     PROCESS_INFORMATION pi = {};
     CheckWin32(CreateProcessW(progid.c_str(), cmdline.data(), nullptr, nullptr, false, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, &si.StartupInfo, &pi), L"CreateProcessW");
+
+    const int maxtime = 30000;
+    const int timeout = 500;
+    DWORD res = 0;
+
+    Sleep(timeout);
+
+    int timespent = timeout;
+    while (timespent < maxtime) {
+        timespent -= timeout;
+        res = WaitForSingleObject(pi.hProcess, timeout);
+        if (res != WAIT_TIMEOUT) {
+            if (debug && res != WAIT_OBJECT_0) OutputErrorMessage(res, L"WaitForSingleObject");
+            break;
+        }
+    }
+
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 }
