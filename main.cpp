@@ -8,31 +8,38 @@
 
 namespace fs = std::filesystem;
 
-static void OutputErrorMessage(DWORD err) {
+bool debug = false;
+
+static void OutputErrorMessage(DWORD err, const wchar_t *action) {
     LPTSTR errorText = nullptr;
     DWORD len = FormatMessageW(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorText, 0, nullptr
     );
 
-    if (len)
-        std::wcerr << L"ERROR: " << errorText << std::endl;
-    else
+    if (len) {
+        if (debug) {
+            std::wcerr << L"ERROR: " << action << L" - " << errorText << std::endl;
+        } else {
+            std::wcerr << L"ERROR: " << errorText << std::endl;
+        }
+    } else {
         std::wcerr << L"ERROR: unknown" << std::endl;
+    }
 }
 
-static void CheckWin32(BOOL res) {
+static void CheckWin32(BOOL res, const wchar_t *action) {
     if (res)
         return;
 
-    OutputErrorMessage(GetLastError());
+    OutputErrorMessage(GetLastError(), action);
     abort();
 }
 
-static void CheckStatus(DWORD status) {
+static void CheckStatus(DWORD status, const wchar_t *action) {
     if (status == ERROR_SUCCESS) return;
 
-    OutputErrorMessage(status);
+    OutputErrorMessage(status, action);
     abort();
 }
 
@@ -44,6 +51,11 @@ int wmain (int argc, wchar_t *argv[]) {
     }
 
     int arg_idx = 1;
+    if (wcscmp(argv[arg_idx], L"-v") == 0) {
+        debug = true;
+        arg_idx++;
+    }
+
     std::wstring progid = argv[arg_idx];
     std::vector<std::wstring> args;
     for (; arg_idx < argc; ++arg_idx)
@@ -65,8 +77,8 @@ int wmain (int argc, wchar_t *argv[]) {
         SIZE_T attr_size = 0;
         InitializeProcThreadAttributeList(NULL, 1, 0, &attr_size);
         si.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)new BYTE[attr_size]();
-        CheckWin32(InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &attr_size));
-        CheckWin32(UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, &sec_cap, sizeof(SECURITY_CAPABILITIES), nullptr, nullptr));
+        CheckWin32(InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &attr_size), L"InitializeProcThreadAttributeList");
+        CheckWin32(UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, &sec_cap, sizeof(SECURITY_CAPABILITIES), nullptr, nullptr), L"UpdateProcThreadAttribute");
     }
 
     {
@@ -83,11 +95,11 @@ int wmain (int argc, wchar_t *argv[]) {
 
         PSECURITY_DESCRIPTOR pSecurityDescriptor = nullptr;
         ACL* prevAcl = nullptr;
-        CheckStatus(GetNamedSecurityInfoW(dir.data(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &prevAcl, nullptr, &pSecurityDescriptor));
+        CheckStatus(GetNamedSecurityInfoW(dir.data(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &prevAcl, nullptr, &pSecurityDescriptor), L"GetNamedSecurityInfoW");
 
         ACL* newAcl = nullptr;
-        CheckStatus(SetEntriesInAclW(1, &access, prevAcl, &newAcl));
-        CheckStatus(SetNamedSecurityInfoW(dir.data(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, newAcl, nullptr));
+        CheckStatus(SetEntriesInAclW(1, &access, prevAcl, &newAcl), L"SetEntriesInAclW");
+        CheckStatus(SetNamedSecurityInfoW(dir.data(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, newAcl, nullptr), L"SetNamedSecurityInfoW");
     }
 
     std::wstring cmdline = L"\"" + std::wstring(progid.c_str()) + L"\"";
@@ -95,7 +107,7 @@ int wmain (int argc, wchar_t *argv[]) {
         cmdline += L" " + arg;
 
     PROCESS_INFORMATION pi = {};
-    CheckWin32(CreateProcessW(progid.c_str(), cmdline.data(), nullptr, nullptr, false, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, &si.StartupInfo, &pi));
+    CheckWin32(CreateProcessW(progid.c_str(), cmdline.data(), nullptr, nullptr, false, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, &si.StartupInfo, &pi), L"CreateProcessW");
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 }
