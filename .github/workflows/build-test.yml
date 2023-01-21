@@ -1,0 +1,21 @@
+name: Build and test
+
+on:
+  push:
+    branches: [ main ]
+    tags: ['*']
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Build app for release
+        run: msbuild cewrapper.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release
