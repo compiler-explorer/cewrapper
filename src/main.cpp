@@ -28,9 +28,10 @@ int wmain(int argc, wchar_t *argv[])
     {
         cewrapper::Config::get().initFromArguments(argc, argv);
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        // std::cerr << e.what() << "\n";
+        if (cewrapper::Config::get().debugging)
+            std::cerr << e.what() << "\n";
         std::wcerr << L"Invalid arguments\n";
         return 1;
     }
@@ -71,7 +72,7 @@ int wmain(int argc, wchar_t *argv[])
         auto dir = fs::path(cewrapper::Config::get().progid).parent_path().wstring();
         if (cewrapper::Config::get().debugging)
             std::wcout << "granting access to: " << dir << "\n";
-        cewrapper::grant_access(static_cast<wchar_t *>(sec_cap.AppContainerSid), dir.data(),
+        cewrapper::grant_access_to_path(static_cast<wchar_t *>(sec_cap.AppContainerSid), dir.data(),
                                 GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
 
@@ -79,7 +80,14 @@ int wmain(int argc, wchar_t *argv[])
     {
         if (cewrapper::Config::get().debugging)
             std::wcout << "granting access to: " << allowed.path << "\n";
-        cewrapper::grant_access(static_cast<wchar_t *>(sec_cap.AppContainerSid), allowed.path.data(), allowed.rights);
+        cewrapper::grant_access_to_path(static_cast<wchar_t *>(sec_cap.AppContainerSid), allowed.path.data(), allowed.rights);
+    }
+
+    for (auto &allowed : cewrapper::Config::get().allowed_registry)
+    {
+        if (cewrapper::Config::get().debugging)
+            std::wcout << "granting access to registry: " << allowed.path << ", r" << allowed.rights << "\n";
+        cewrapper::grant_access_to_registry(static_cast<wchar_t *>(sec_cap.AppContainerSid), allowed.path.data(), allowed.rights, allowed.type);
     }
 
     std::wstring cmdline = L"\"" + std::wstring(cewrapper::Config::get().progid.c_str()) + L"\"";

@@ -52,6 +52,21 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
         this->args.push_back(argv[arg_idx]);
 }
 
+std::wstring utf8str_to_wstr(std::string_view utf8str)
+{
+    wchar_t *buffer = static_cast<wchar_t *>(malloc(utf8str.length() * sizeof(wchar_t)));
+    int convertedChars = MultiByteToWideChar(CP_UTF8, 0, utf8str.data(), static_cast<int>(utf8str.length()),
+                                             reinterpret_cast<wchar_t *>(buffer), static_cast<int>(utf8str.length()));
+    if (convertedChars <= 0)
+        throw std::exception("Could not convert utf8 string");
+
+    std::wstring newstr(buffer, convertedChars);
+
+    free(buffer);
+
+    return newstr;
+}
+
 void cewrapper::Config::loadFromFile(const std::wstring_view file)
 {
     using json = nlohmann::json;
@@ -59,14 +74,13 @@ void cewrapper::Config::loadFromFile(const std::wstring_view file)
     std::ifstream jsonfile(file);
     json data = json::parse(jsonfile);
 
-    auto allowed = data["allowed"];
-    for (auto dir : allowed)
+    for (auto &dir : data["allowed_paths"])
     {
         uint32_t rights{ GENERIC_READ };
-        if (dir["rw"])
+        if (dir.value("rw", false))
             rights |= GENERIC_WRITE;
 
-        if (!dir["noexec"])
+        if (!dir.value("noexec", false))
             rights |= GENERIC_EXECUTE;
 
         std::string path = dir["path"];
@@ -77,14 +91,34 @@ void cewrapper::Config::loadFromFile(const std::wstring_view file)
         if (path.length() >= MAXINT)
             continue;
 
-        // assume json file is in utf8
-        wchar_t *buffer = static_cast<wchar_t *>(malloc(path.length() * sizeof(wchar_t)));
-        int convertedChars = MultiByteToWideChar(CP_UTF8, 0, path.data(), static_cast<int>(path.length()), reinterpret_cast<wchar_t *>(buffer), static_cast<int>(path.length()));
-        if (convertedChars <= 0)
-            throw std::exception("Could not read utf8 path from json file");
+        this->allowed_dirs.push_back({ .path = utf8str_to_wstr(path), .rights = rights });
+    }
 
-        this->allowed_dirs.push_back({.path = std::wstring(buffer, convertedChars), .rights = rights});
+    for (auto &reg : data["allowed_registry"])
+    {
+        uint32_t rights{ GENERIC_READ };
+        if (reg.value("rw", false))
+            rights = GENERIC_ALL;
 
-        free(buffer);
+        registry_type_t regtype{};
+        std::string jsregtype = reg.value("type", "normal");
+        if (jsregtype.compare("wow6464"))
+        {
+            regtype = registry_type_t::wow6464;
+        }
+        else if (jsregtype.compare("wow6432"))
+        {
+            regtype = registry_type_t::wow6432;
+        }
+
+        std::string path = reg["path"];
+
+        if (path.empty())
+            continue;
+
+        if (path.length() >= MAXINT)
+            continue;
+
+        this->allowed_registry.push_back({ .path = utf8str_to_wstr(path), .rights = rights, .type = regtype });
     }
 }

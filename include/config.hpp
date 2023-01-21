@@ -3,14 +3,10 @@
 #include <string>
 #include <vector>
 
+#include "config_types.hpp"
+
 namespace cewrapper
 {
-
-struct DirAccess
-{
-    std::wstring path;
-    uint32_t rights;
-};
 
 struct Config
 {
@@ -21,6 +17,7 @@ struct Config
     std::wstring progid{};
     std::vector<std::wstring> args{};
     std::vector<DirAccess> allowed_dirs{};
+    std::vector<RegKeyAccess> allowed_registry{};
 
     void initFromArguments(int argc, wchar_t *argv[]);
 
