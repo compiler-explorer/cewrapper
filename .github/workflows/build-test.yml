@@ -18,4 +18,4 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
 
       - name: Build app for release
-        run: msbuild cewrapper.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release
+        run: msbuild cewrapper.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release|x64
