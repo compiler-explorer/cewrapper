@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+# More msvc stuff we don't need
+*.tlog
+*.iobj
+*.ipdb
+*.pdb
+*.db
+*.opendb
+*.ipch
+*.recipe
+*.FileListAbsolute.txt
