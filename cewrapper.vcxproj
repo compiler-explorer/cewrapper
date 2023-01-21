@@ -11,10 +11,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\access.hpp" />
     <ClInclude Include="include\checks.hpp" />
     <ClInclude Include="include\config.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\access.cpp" />
     <ClCompile Include="src\checks.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\main.cpp" />

@@ -1,5 +1,6 @@
 #include "../include/checks.hpp"
 #include "../include/config.hpp"
+#include "../include/access.hpp"
 
 
 #include <Windows.h>
@@ -60,27 +61,7 @@ int wmain(int argc, wchar_t *argv[])
 
     {
         auto dir = fs::path(cewrapper::Config::get().progid).parent_path().wstring();
-        EXPLICIT_ACCESSW access = {};
-        {
-            access.grfAccessPermissions = GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE;
-            access.grfAccessMode = GRANT_ACCESS;
-            access.grfInheritance = OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE;
-            access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-            access.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
-            access.Trustee.ptstrName = (wchar_t *)*&sec_cap.AppContainerSid;
-        }
-
-        PSECURITY_DESCRIPTOR pSecurityDescriptor = nullptr;
-        ACL *prevAcl = nullptr;
-        cewrapper::CheckStatus(GetNamedSecurityInfoW(dir.data(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr,
-                                                     nullptr, &prevAcl, nullptr, &pSecurityDescriptor),
-                               L"GetNamedSecurityInfoW");
-
-        ACL *newAcl = nullptr;
-        cewrapper::CheckStatus(SetEntriesInAclW(1, &access, prevAcl, &newAcl), L"SetEntriesInAclW");
-        cewrapper::CheckStatus(SetNamedSecurityInfoW(dir.data(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr,
-                                                     nullptr, newAcl, nullptr),
-                               L"SetNamedSecurityInfoW");
+        cewrapper::grant_access(static_cast<wchar_t *>(sec_cap.AppContainerSid), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
 
     std::wstring cmdline = L"\"" + std::wstring(cewrapper::Config::get().progid.c_str()) + L"\"";
