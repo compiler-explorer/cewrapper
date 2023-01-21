@@ -78,8 +78,8 @@ void cewrapper::Config::loadFromFile(const std::wstring_view file)
             continue;
 
         // assume json file is in utf8
-        wchar_t *buffer = static_cast<wchar_t *>(malloc(path.length()));
-        int convertedChars = MultiByteToWideChar(CP_UTF8, 0, path.data(), static_cast<int>(path.length() / sizeof(wchar_t)), reinterpret_cast<wchar_t *>(buffer), static_cast<int>(path.length()));
+        wchar_t *buffer = static_cast<wchar_t *>(malloc(path.length() * sizeof(wchar_t)));
+        int convertedChars = MultiByteToWideChar(CP_UTF8, 0, path.data(), static_cast<int>(path.length()), reinterpret_cast<wchar_t *>(buffer), static_cast<int>(path.length()));
         if (convertedChars <= 0)
             throw std::exception("Could not read utf8 path from json file");
 
