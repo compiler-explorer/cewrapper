@@ -6,4 +6,4 @@ jailing wrapper for execution of windows applications
 
 `cewrapper.exe C:\full\path\to\executable.exe arguments`
 
-for some verboseness, use `-v`
+for some verboseness, use `cewrapper.exe -v C:\full\path\to\executable.exe arguments`
