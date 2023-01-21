@@ -19,7 +19,7 @@ int wmain(int argc, wchar_t *argv[])
     if (argc < 2)
     {
         std::wcerr << L"Too few arguments\n";
-        std::wcerr << L"Usage: cewrapper.exe ExePath [args]\n";
+        std::wcerr << L"Usage: cewrapper.exe [-v] [--time_limit=1] ExePath [args]\n";
         return -1;
     }
 
@@ -97,7 +97,7 @@ int wmain(int argc, wchar_t *argv[])
     DWORD res = 0;
 
     int timespent = 0;
-    while (timespent < maxtime)
+    while (maxtime == 0 || timespent < maxtime)
     {
         timespent += timeout;
         res = WaitForSingleObject(pi.hProcess, timeout);
@@ -107,7 +107,7 @@ int wmain(int argc, wchar_t *argv[])
         }
     }
 
-    if (timespent >= maxtime)
+    if (maxtime > 0 && timespent >= maxtime)
     {
         if (res != WAIT_OBJECT_0)
         {
