@@ -9,6 +9,7 @@ namespace cewrapper
 struct Config
 {
     bool debugging{};
+    bool extra_debugging{};
     int time_limit_ms{};
     int loopwait_ms{ 500 };
     std::wstring progid{};

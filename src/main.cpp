@@ -40,10 +40,17 @@ int wmain(int argc, wchar_t *argv[])
         HRESULT hr = CreateAppContainerProfile(L"cesandbox", L"cesandbox", L"cesandbox", nullptr, 0, &sec_cap.AppContainerSid);
         if (HRESULT_CODE(hr) == ERROR_ALREADY_EXISTS)
         {
+            if (cewrapper::Config::get().extra_debugging)
+                std::wcout << "CreateAppContainerProfile - ALREADY_EXISTS, deriving from profile\n";
             hr = DeriveAppContainerSidFromAppContainerName(L"cesandbox", &sec_cap.AppContainerSid);
         }
+
         if (FAILED(hr))
+        {
+            if (cewrapper::Config::get().debugging)
+                std::wcerr << "CreateAppContainerProfile or DeriveAppContainerSidFromAppContainerName - Failed with " << hr << "\n";
             abort();
+        }
     }
 
     STARTUPINFOEX si = {};
