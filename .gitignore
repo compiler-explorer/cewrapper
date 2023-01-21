@@ -41,3 +41,6 @@
 *.ipch
 *.recipe
 *.FileListAbsolute.txt
+*.suo
+*.log
+*.ilk

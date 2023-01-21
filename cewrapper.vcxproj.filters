@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="include\checks.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\config.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\checks.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\config.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{dfe2eb05-5d7c-4957-b23b-952a16773280}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{217a270f-4f14-422d-a26c-5fed0aeabb90}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
