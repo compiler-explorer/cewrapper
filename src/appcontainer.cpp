@@ -27,6 +27,9 @@ void cewrapper::AppContainer::DestroyContainer()
     {
         if (config.debugging)
             std::wcerr << "DeleteAppContainerProfile - Failed with " << hr << "\n";
+
+        // documentation says to call it again when it fails https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-deleteappcontainerprofile
+        DeleteAppContainerProfile(L"cesandbox");
     }
 }
 
