@@ -22,7 +22,12 @@ void cewrapper::AppContainer::CreateContainer()
 
 void cewrapper::AppContainer::DestroyContainer()
 {
-    DeleteAppContainerProfile(L"cesandbox");
+    HRESULT hr = DeleteAppContainerProfile(L"cesandbox");
+    if (FAILED(hr))
+    {
+        if (config.debugging)
+            std::wcerr << "DeleteAppContainerProfile - Failed with " << hr << "\n";
+    }
 }
 
 cewrapper::AppContainer::AppContainer(const Config config) : config(config)
@@ -32,8 +37,7 @@ cewrapper::AppContainer::AppContainer(const Config config) : config(config)
 
 cewrapper::AppContainer::~AppContainer()
 {
-    // todo: find out if recreating the appcontainer every time is fast enough
-    // this->DestroyContainer();
+    this->DestroyContainer();
 }
 
 wchar_t *cewrapper::AppContainer::getSid() const
