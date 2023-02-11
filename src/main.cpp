@@ -1,11 +1,11 @@
+#include "../include/access.hpp"
+#include "../include/appcontainer.hpp"
 #include "../include/checks.hpp"
 #include "../include/config.hpp"
-#include "../include/access.hpp"
-
 
 #include <Windows.h>
 #include <aclapi.h>
-#include <userenv.h>
+
 #pragma comment(lib, "Userenv.lib")
 
 #include <filesystem>
@@ -36,34 +36,19 @@ int wmain(int argc, wchar_t *argv[])
         return 1;
     }
 
-    SECURITY_CAPABILITIES sec_cap = {};
-    {
-        HRESULT hr = CreateAppContainerProfile(L"cesandbox", L"cesandbox", L"cesandbox", nullptr, 0, &sec_cap.AppContainerSid);
-        if (HRESULT_CODE(hr) == ERROR_ALREADY_EXISTS)
-        {
-            if (cewrapper::Config::get().extra_debugging)
-                std::wcout << "CreateAppContainerProfile - ALREADY_EXISTS, deriving from profile\n";
-            hr = DeriveAppContainerSidFromAppContainerName(L"cesandbox", &sec_cap.AppContainerSid);
-        }
-
-        if (FAILED(hr))
-        {
-            if (cewrapper::Config::get().debugging)
-                std::wcerr << "CreateAppContainerProfile or DeriveAppContainerSidFromAppContainerName - Failed with " << hr << "\n";
-            abort();
-        }
-    }
+    cewrapper::AppContainer container(cewrapper::Config::get());
 
     STARTUPINFOEX si = {};
     {
         si.StartupInfo.cb = sizeof(STARTUPINFOEX);
         SIZE_T attr_size = 0;
-        InitializeProcThreadAttributeList(NULL, 1, 0, &attr_size);
+        InitializeProcThreadAttributeList(nullptr, 1, 0, &attr_size);
         si.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST) new BYTE[attr_size]();
         cewrapper::CheckWin32(InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &attr_size),
                               L"InitializeProcThreadAttributeList");
         cewrapper::CheckWin32(UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,
-                                                        &sec_cap, sizeof(SECURITY_CAPABILITIES), nullptr, nullptr),
+                                                        container.getSecurityCapabilitiesPtr(),
+                                                        sizeof(SECURITY_CAPABILITIES), nullptr, nullptr),
                               L"UpdateProcThreadAttribute");
     }
 
@@ -72,22 +57,21 @@ int wmain(int argc, wchar_t *argv[])
         auto dir = fs::path(cewrapper::Config::get().progid).parent_path().wstring();
         if (cewrapper::Config::get().debugging)
             std::wcout << "granting access to: " << dir << "\n";
-        cewrapper::grant_access_to_path(static_cast<wchar_t *>(sec_cap.AppContainerSid), dir.data(),
-                                GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+        cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
 
     for (auto &allowed : cewrapper::Config::get().allowed_dirs)
     {
         if (cewrapper::Config::get().debugging)
             std::wcout << "granting access to: " << allowed.path << "\n";
-        cewrapper::grant_access_to_path(static_cast<wchar_t *>(sec_cap.AppContainerSid), allowed.path.data(), allowed.rights);
+        cewrapper::grant_access_to_path(container.getSid(), allowed.path.data(), allowed.rights);
     }
 
     for (auto &allowed : cewrapper::Config::get().allowed_registry)
     {
         if (cewrapper::Config::get().debugging)
             std::wcout << "granting access to registry: " << allowed.path << ", r" << allowed.rights << "\n";
-        cewrapper::grant_access_to_registry(static_cast<wchar_t *>(sec_cap.AppContainerSid), allowed.path.data(), allowed.rights, allowed.type);
+        cewrapper::grant_access_to_registry(container.getSid(), allowed.path.data(), allowed.rights, allowed.type);
     }
 
     std::wstring cmdline = L"\"" + std::wstring(cewrapper::Config::get().progid.c_str()) + L"\"";

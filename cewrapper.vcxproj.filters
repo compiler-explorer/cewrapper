@@ -12,6 +12,9 @@
     </ClInclude>
     <ClInclude Include="3rdparty\nlohmann\json.hpp" />
     <ClInclude Include="include\config_types.hpp" />
+    <ClInclude Include="include\appcontainer.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\checks.cpp">
@@ -24,6 +27,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\access.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\appcontainer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

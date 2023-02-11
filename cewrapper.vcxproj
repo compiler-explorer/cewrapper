@@ -13,12 +13,14 @@
   <ItemGroup>
     <ClInclude Include="3rdparty\nlohmann\json.hpp" />
     <ClInclude Include="include\access.hpp" />
+    <ClInclude Include="include\appcontainer.hpp" />
     <ClInclude Include="include\checks.hpp" />
     <ClInclude Include="include\config.hpp" />
     <ClInclude Include="include\config_types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\access.cpp" />
+    <ClCompile Include="src\appcontainer.cpp" />
     <ClCompile Include="src\checks.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\main.cpp" />
