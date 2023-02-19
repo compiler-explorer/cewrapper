@@ -19,3 +19,8 @@ jobs:
 
       - name: Build app for release
         run: msbuild cewrapper.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release -property:Platform=x64
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: Release/x64/cewrapper.exe
