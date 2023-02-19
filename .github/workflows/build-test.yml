@@ -23,4 +23,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: dist
-          path: Release/x64/cewrapper.exe
+          path: D:\a\cewrapper\cewrapper\x64\Release\cewrapper.exe 
