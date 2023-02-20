@@ -20,7 +20,7 @@ int wmain(int argc, wchar_t *argv[])
     if (argc < 2)
     {
         std::wcerr << L"Too few arguments\n";
-        std::wcerr << L"Usage: cewrapper.exe [-v] [--time_limit=1] ExePath [args]\n";
+        std::wcerr << L"Usage: cewrapper.exe [-v] [--config=/full/path/to/config.json] [--time_limit=1] ExePath [args]\n";
         return -1;
     }
 
@@ -98,6 +98,8 @@ int wmain(int argc, wchar_t *argv[])
         }
     }
 
+    DWORD app_exit_code = 255;
+
     if (maxtime > 0 && timespent >= maxtime)
     {
         if (res != WAIT_OBJECT_0)
@@ -112,7 +114,13 @@ int wmain(int argc, wchar_t *argv[])
     {
         cewrapper::OutputErrorMessage(res, L"WaitForSingleObject");
     }
+    else
+    {
+        GetExitCodeProcess(pi.hProcess, &app_exit_code);
+    }
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
+
+    return app_exit_code;
 }

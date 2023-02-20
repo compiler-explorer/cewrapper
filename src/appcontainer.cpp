@@ -3,8 +3,7 @@
 
 void cewrapper::AppContainer::CreateContainer()
 {
-    // todo: make unique name
-    HRESULT hr = CreateAppContainerProfile(L"cesandbox", L"cesandbox", L"cesandbox", nullptr, 0, &sec_cap.AppContainerSid);
+    HRESULT hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", nullptr, 0, &sec_cap.AppContainerSid);
     if (HRESULT_CODE(hr) == ERROR_ALREADY_EXISTS)
     {
         if (config.extra_debugging)
@@ -22,19 +21,31 @@ void cewrapper::AppContainer::CreateContainer()
 
 void cewrapper::AppContainer::DestroyContainer()
 {
-    HRESULT hr = DeleteAppContainerProfile(L"cesandbox");
+    HRESULT hr = DeleteAppContainerProfile(this->name.c_str());
     if (FAILED(hr))
     {
         if (config.debugging)
             std::wcerr << "DeleteAppContainerProfile - Failed with " << hr << "\n";
 
         // documentation says to call it again when it fails https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-deleteappcontainerprofile
-        DeleteAppContainerProfile(L"cesandbox");
+        DeleteAppContainerProfile(this->name.c_str());
     }
+}
+
+std::wstring CreateSandboxName()
+{
+    std::wstring name = L"cesandbox";
+
+    const int pid = GetCurrentProcessId();
+    name.append(std::to_wstring(pid));
+
+    return name;
 }
 
 cewrapper::AppContainer::AppContainer(const Config config) : config(config)
 {
+    this->name = CreateSandboxName();
+
     this->CreateContainer();
 }
 
