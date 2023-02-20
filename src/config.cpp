@@ -20,6 +20,7 @@ inline int svtoi(const std::wstring_view sv)
 void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
 {
     int arg_idx = 1;
+    this->home_set = false;
 
     while (arg_idx < argc)
     {
@@ -38,6 +39,12 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
         else if (arg.starts_with(L"--config="))
         {
             this->loadFromFile(arg.substr(9));
+            arg_idx++;
+        }
+        else if (arg.starts_with(L"--home="))
+        {
+            this->home = arg.substr(7);
+            this->home_set = true;
             arg_idx++;
         }
         else

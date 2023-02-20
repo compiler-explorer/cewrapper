@@ -20,7 +20,8 @@ int wmain(int argc, wchar_t *argv[])
     if (argc < 2)
     {
         std::wcerr << L"Too few arguments\n";
-        std::wcerr << L"Usage: cewrapper.exe [-v] [--config=/full/path/to/config.json] [--time_limit=1] ExePath [args]\n";
+        std::wcerr << L"Usage: cewrapper.exe [-v] [--config=/full/path/to/config.json] [--home=/preferred/cwdpath] "
+                      L"[--time_limit=1] ExePath [args]\n";
         return -1;
     }
 
@@ -52,8 +53,16 @@ int wmain(int argc, wchar_t *argv[])
                               L"UpdateProcThreadAttribute");
     }
 
-    // access to its own directory
+    if (cewrapper::Config::get().home_set)
     {
+        auto dir = cewrapper::Config::get().home;
+        if (cewrapper::Config::get().debugging)
+            std::wcout << "granting access to: " << dir << "\n";
+        cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+    }
+    else
+    {
+        // access to its own directory
         auto dir = fs::path(cewrapper::Config::get().progid).parent_path().wstring();
         if (cewrapper::Config::get().debugging)
             std::wcout << "granting access to: " << dir << "\n";

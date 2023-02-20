@@ -15,6 +15,8 @@ struct Config
     int time_limit_ms{};
     int loopwait_ms{ 500 };
     std::wstring progid{};
+    std::wstring home{};
+    bool home_set{};
     std::vector<std::wstring> args{};
     std::vector<DirAccess> allowed_dirs{};
     std::vector<RegKeyAccess> allowed_registry{};
