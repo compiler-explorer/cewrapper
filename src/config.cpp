@@ -81,6 +81,8 @@ void cewrapper::Config::loadFromFile(const std::wstring_view file)
     std::ifstream jsonfile(file);
     json data = json::parse(jsonfile);
 
+    this->use_appcontainer = data.value("use_appcontainer", true);
+
     for (auto &dir : data["allowed_paths"])
     {
         uint32_t rights{ GENERIC_READ };

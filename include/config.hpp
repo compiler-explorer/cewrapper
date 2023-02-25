@@ -17,6 +17,7 @@ struct Config
     std::wstring progid{};
     std::wstring home{};
     bool home_set{};
+    bool use_appcontainer{true};
     std::vector<std::wstring> args{};
     std::vector<DirAccess> allowed_dirs{};
     std::vector<RegKeyAccess> allowed_registry{};
