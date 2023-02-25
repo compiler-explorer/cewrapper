@@ -31,6 +31,12 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
             this->time_limit_ms = svtoi(arg.substr(13)) * 1000;
             arg_idx++;
         }
+        else if (arg.compare(L"-vv") == 0)
+        {
+            this->debugging = true;
+            this->extra_debugging = true;
+            arg_idx++;
+        }
         else if (arg.compare(L"-v") == 0)
         {
             this->debugging = true;
@@ -55,6 +61,7 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
 
     this->progid = argv[arg_idx];
     this->args.clear();
+    arg_idx += 1;
     for (; arg_idx < argc; ++arg_idx)
         this->args.push_back(argv[arg_idx]);
 }
