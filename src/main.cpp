@@ -29,29 +29,22 @@ DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
 {
     auto &config = cewrapper::Config::get();
 
+    std::wstring cmdline = L"\"" + std::wstring(config.progid.c_str()) + L"\"";
+    for (const auto &arg : config.args)
+        cmdline += L" \"" + arg + L"\"";
+
+    if (config.extra_debugging)
+        std::wcout << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
+
     PROCESS_INFORMATION pi = {};
     if (hUserToken == nullptr)
     {
-        std::wstring cmdline = L"\"" + std::wstring(config.progid.c_str()) + L"\"";
-        for (const auto &arg : config.args)
-            cmdline += L" " + arg;
-
-        if (config.extra_debugging)
-            std::wcout << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
-
         cewrapper::CheckWin32(CreateProcessW(config.progid.c_str(), cmdline.data(), nullptr, nullptr, false,
                                              EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, &si.StartupInfo, &pi),
                               L"CreateProcessW");
     }
     else
     {
-        std::wstring cmdline = L"\"" + std::wstring(config.progid.c_str()) + L"\"";
-        for (const auto &arg : config.args)
-            cmdline += L" " + arg;
-
-        if (config.extra_debugging)
-            std::wcout << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
-
         cewrapper::CheckWin32(CreateProcessAsUserW(hUserToken, config.progid.c_str(), cmdline.data(), nullptr, nullptr,
                                                    false, NORMAL_PRIORITY_CLASS, nullptr, nullptr, &si.StartupInfo, &pi),
                               L"CreateProcessAsUserW");
