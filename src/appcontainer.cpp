@@ -8,7 +8,7 @@ void cewrapper::AppContainer::CreateContainer()
     {
        // todo: should actually delete it first, because we recreate it each time...
         if (config.extra_debugging)
-            std::wcout << "CreateAppContainerProfile - ALREADY_EXISTS, deriving from profile\n";
+           std::wcerr << "CreateAppContainerProfile - ALREADY_EXISTS, deriving from profile\n";
         hr = DeriveAppContainerSidFromAppContainerName(L"cesandbox", &sec_cap.AppContainerSid);
     }
 

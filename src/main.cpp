@@ -34,7 +34,7 @@ DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
         cmdline += L" \"" + arg + L"\"";
 
     if (config.extra_debugging)
-        std::wcout << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
+        std::wcerr << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
 
     PROCESS_INFORMATION pi = {};
     if (hUserToken == nullptr)
@@ -139,7 +139,7 @@ DWORD execute_using_appcontainer()
     {
         auto dir = config.home;
         if (config.debugging)
-            std::wcout << "granting access to: " << dir << "\n";
+            std::wcerr << "granting access to: " << dir << "\n";
         cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
     else
@@ -147,21 +147,21 @@ DWORD execute_using_appcontainer()
         // access to its own directory
         auto dir = std::filesystem::path(config.progid).parent_path().wstring();
         if (config.debugging)
-            std::wcout << "granting access to: " << dir << "\n";
+            std::wcerr << "granting access to: " << dir << "\n";
         cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
 
     for (auto &allowed : config.allowed_dirs)
     {
         if (config.debugging)
-            std::wcout << "granting access to: " << allowed.path << "\n";
+            std::wcerr << "granting access to: " << allowed.path << "\n";
         cewrapper::grant_access_to_path(container.getSid(), allowed.path.data(), allowed.rights);
     }
 
     for (auto &allowed : config.allowed_registry)
     {
         if (config.debugging)
-            std::wcout << "granting access to registry: " << allowed.path << ", r" << allowed.rights << "\n";
+            std::wcerr << "granting access to registry: " << allowed.path << ", r" << allowed.rights << "\n";
         cewrapper::grant_access_to_registry(container.getSid(), allowed.path.data(), allowed.rights, allowed.type);
     }
 
