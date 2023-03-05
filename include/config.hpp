@@ -12,6 +12,7 @@ struct Config
 {
     bool debugging{};
     bool extra_debugging{};
+    bool suspend_after_start{};
     int time_limit_ms{};
     int loopwait_ms{ 500 };
     std::wstring progid{};
