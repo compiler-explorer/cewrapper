@@ -6,6 +6,7 @@ void cewrapper::AppContainer::CreateContainer()
     HRESULT hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", nullptr, 0, &sec_cap.AppContainerSid);
     if (HRESULT_CODE(hr) == ERROR_ALREADY_EXISTS)
     {
+       // todo: should actually delete it first, because we recreate it each time...
         if (config.extra_debugging)
             std::wcout << "CreateAppContainerProfile - ALREADY_EXISTS, deriving from profile\n";
         hr = DeriveAppContainerSidFromAppContainerName(L"cesandbox", &sec_cap.AppContainerSid);

@@ -50,6 +50,9 @@ DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
                               L"CreateProcessAsUserW");
     }
 
+    if (config.suspend_after_start)
+        DebugActiveProcess(pi.dwProcessId);
+
     const int maxtime = config.time_limit_ms;
     const int timeout = config.loopwait_ms;
     DWORD res = 0;

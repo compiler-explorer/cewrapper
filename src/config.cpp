@@ -53,6 +53,11 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
             this->home_set = true;
             arg_idx++;
         }
+        else if (arg.compare(L"--suspend") == 0)
+        {
+            this->suspend_after_start = true;
+            arg_idx++;
+        }
         else
         {
             break;
