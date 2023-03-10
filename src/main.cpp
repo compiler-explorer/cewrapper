@@ -36,6 +36,8 @@ DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
     if (config.extra_debugging)
         std::wcerr << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
 
+    si.StartupInfo.dwFlags = CREATE_UNICODE_ENVIRONMENT;
+
     PROCESS_INFORMATION pi = {};
     if (hUserToken == nullptr)
     {
