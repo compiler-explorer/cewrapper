@@ -2,6 +2,7 @@
 #include "../include/appcontainer.hpp"
 #include "../include/checks.hpp"
 #include "../include/config.hpp"
+#include "../include/job.hpp"
 
 #include <Windows.h>
 #include <aclapi.h>
@@ -25,7 +26,7 @@ enum class saferlevel_t : DWORD
 
 saferlevel_t default_lower_rights_setting = saferlevel_t::Normal;
 
-DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
+DWORD SpawnProcess(const cewrapper::Job *job, STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
 {
     auto &config = cewrapper::Config::get();
 
@@ -36,24 +37,28 @@ DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
     if (config.extra_debugging)
         std::wcerr << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
 
-    si.StartupInfo.dwFlags = CREATE_UNICODE_ENVIRONMENT;
+    si.StartupInfo.dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED;
 
     PROCESS_INFORMATION pi = {};
     if (hUserToken == nullptr)
     {
         cewrapper::CheckWin32(CreateProcessW(config.progid.c_str(), cmdline.data(), nullptr, nullptr, false,
-                                             EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, &si.StartupInfo, &pi),
+                                             EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT, nullptr,
+                                             nullptr, &si.StartupInfo, &pi),
                               L"CreateProcessW");
     }
     else
     {
         cewrapper::CheckWin32(CreateProcessAsUserW(hUserToken, config.progid.c_str(), cmdline.data(), nullptr, nullptr,
-                                                   false, NORMAL_PRIORITY_CLASS, nullptr, nullptr, &si.StartupInfo, &pi),
+                                                   false, NORMAL_PRIORITY_CLASS | CREATE_SUSPENDED, nullptr, nullptr,
+                                                   &si.StartupInfo, &pi),
                               L"CreateProcessAsUserW");
     }
 
-    if (config.suspend_after_start)
-        DebugActiveProcess(pi.dwProcessId);
+    job->AddProcess(pi.hProcess);
+
+    if (!config.suspend_after_start)
+        ResumeThread(pi.hThread);
 
     const int maxtime = config.time_limit_ms;
     const int timeout = config.loopwait_ms;
@@ -97,7 +102,7 @@ DWORD SpawnProcess(STARTUPINFOEX &si, HANDLE hUserToken = nullptr)
     return app_exit_code;
 }
 
-DWORD execute_using_lower_rights()
+DWORD execute_using_lower_rights(const cewrapper::Job &job)
 {
     SAFER_LEVEL_HANDLE hAuthzLevel = nullptr;
     HANDLE hToken = nullptr;
@@ -110,7 +115,7 @@ DWORD execute_using_lower_rights()
     ZeroMemory(&si, sizeof(STARTUPINFO));
     si.StartupInfo.cb = sizeof(STARTUPINFO);
 
-    DWORD app_exit_code = SpawnProcess(si, hToken);
+    DWORD app_exit_code = SpawnProcess(&job, si, hToken);
 
     if (hAuthzLevel != nullptr)
         SaferCloseLevel(hAuthzLevel);
@@ -118,7 +123,7 @@ DWORD execute_using_lower_rights()
     return app_exit_code;
 }
 
-DWORD execute_using_appcontainer()
+DWORD execute_using_appcontainer(const cewrapper::Job &job)
 {
     auto &config = cewrapper::Config::get();
     cewrapper::AppContainer container(config);
@@ -167,7 +172,7 @@ DWORD execute_using_appcontainer()
         cewrapper::grant_access_to_registry(container.getSid(), allowed.path.data(), allowed.rights, allowed.type);
     }
 
-    return SpawnProcess(si);
+    return SpawnProcess(&job, si);
 }
 
 int wmain(int argc, wchar_t *argv[])
@@ -192,14 +197,16 @@ int wmain(int argc, wchar_t *argv[])
         return 1;
     }
 
+    cewrapper::Job job(cewrapper::Config::get());
+
     DWORD app_exit_code = 0;
     if (cewrapper::Config::get().use_appcontainer)
     {
-        app_exit_code = execute_using_appcontainer();
+        app_exit_code = execute_using_appcontainer(job);
     }
     else
     {
-        app_exit_code = execute_using_lower_rights();
+        app_exit_code = execute_using_lower_rights(job);
     }
 
     return app_exit_code;

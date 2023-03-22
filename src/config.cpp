@@ -95,6 +95,9 @@ void cewrapper::Config::loadFromFile(const std::wstring_view file)
 
     this->use_appcontainer = data.value("use_appcontainer", true);
 
+    this->mem_max = data.value("mem_max", 0);
+    this->pids_max = data.value("pids_max", 0);
+
     for (auto &dir : data["allowed_paths"])
     {
         uint32_t rights{ GENERIC_READ };

@@ -19,6 +19,10 @@ struct Config
     std::wstring home{};
     bool home_set{};
     bool use_appcontainer{true};
+
+    int pids_max{};
+    int64_t mem_max{};
+
     std::vector<std::wstring> args{};
     std::vector<DirAccess> allowed_dirs{};
     std::vector<RegKeyAccess> allowed_registry{};
