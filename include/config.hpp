@@ -18,7 +18,7 @@ struct Config
     std::wstring progid{};
     std::wstring home{};
     bool home_set{};
-    bool use_appcontainer{true};
+    bool use_appcontainer{ true };
 
     int pids_max{};
     int64_t mem_max{};
@@ -31,7 +31,7 @@ struct Config
 
     static Config &get();
 
-private:
+    private:
     void loadFromFile(const std::wstring_view file);
 };
 

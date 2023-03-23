@@ -17,6 +17,7 @@
     <ClInclude Include="include\checks.hpp" />
     <ClInclude Include="include\config.hpp" />
     <ClInclude Include="include\config_types.hpp" />
+    <ClInclude Include="include\exitcodes.hpp" />
     <ClInclude Include="include\job.hpp" />
   </ItemGroup>
   <ItemGroup>

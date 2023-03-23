@@ -1,5 +1,6 @@
 #include "../include/job.hpp"
 #include "../include/checks.hpp"
+#include "../include/exitcodes.hpp"
 #include <iostream>
 
 std::wstring CreateJobName()
@@ -19,16 +20,52 @@ cewrapper::Job::Job(const Config config) : config(config)
     this->CreateJob();
 }
 
+void cewrapper::Job::ReportOnJob()
+{
+    if (this->config.extra_debugging)
+    {
+        {
+            JOBOBJECTINFOCLASS infoclass = JOBOBJECTINFOCLASS::JobObjectExtendedLimitInformation;
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION info{};
+            DWORD returnlen{};
+
+            CheckWin32(QueryInformationJobObject(this->job, infoclass, static_cast<void *>(&info),
+                                                 sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION), &returnlen),
+                       L"QueryInformationJobObject");
+
+            std::cerr << "Peak memory usage: " << info.PeakJobMemoryUsed << "\n";
+        }
+
+        {
+            JOBOBJECTINFOCLASS infoclass = JOBOBJECTINFOCLASS::JobObjectBasicAndIoAccountingInformation;
+            JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION info{};
+
+            DWORD returnlen{};
+
+            CheckWin32(QueryInformationJobObject(this->job, infoclass, static_cast<void *>(&info),
+                                                 sizeof(JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION), &returnlen),
+                       L"QueryInformationJobObject");
+
+            std::cerr << "Total processes: " << info.BasicInfo.TotalProcesses << "\n";
+            // current policy is to block processes from going above limits, not terminate them, so this is always 0
+            //std::cerr << "Total terminated because of limit violation: " << info.BasicInfo.TotalTerminatedProcesses << "\n";
+            std::cerr << "Total pagefaults: " << info.BasicInfo.TotalPageFaultCount << "\n";
+            std::cerr << "Total user time: " << info.BasicInfo.TotalUserTime.QuadPart << "\n";
+            std::cerr << "Total kernel time: " << info.BasicInfo.TotalKernelTime.QuadPart << "\n";
+        }
+    }
+}
+
 cewrapper::Job::~Job()
 {
-    this->KillJob(9);
+    this->KillJob((unsigned int)SpecialExitCode::ProcessTookTooLongMethod2);
 }
 
 void cewrapper::Job::CreateJob()
 {
     // https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects
 
-    this->job = CreateJobObject(NULL, this->name.c_str());
+    this->job = CreateJobObject(nullptr, this->name.c_str());
 
     JOBOBJECTINFOCLASS infoclass = JOBOBJECTINFOCLASS::JobObjectExtendedLimitInformation;
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION info{};
@@ -66,6 +103,7 @@ void cewrapper::Job::CreateJob()
 void cewrapper::Job::KillJob(UINT exitcode)
 {
     TerminateJobObject(this->job, exitcode);
+    ReportOnJob();
     CloseHandle(this->job);
 }
 

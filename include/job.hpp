@@ -15,6 +15,7 @@ class Job
     HANDLE job{};
     void CreateJob();
     void KillJob(UINT exitcode);
+    void ReportOnJob();
 
     public:
     Job(const Config config);

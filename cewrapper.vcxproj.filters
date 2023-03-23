@@ -18,6 +18,9 @@
     <ClInclude Include="include\job.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\exitcodes.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\checks.cpp">

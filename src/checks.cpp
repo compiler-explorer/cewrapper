@@ -31,7 +31,8 @@ void cewrapper::CheckWin32(BOOL res, const wchar_t *action)
         return;
 
     OutputErrorMessage(GetLastError(), action);
-    abort();
+
+    throw std::exception("abort");
 }
 
 void cewrapper::CheckStatus(DWORD status, const wchar_t *action)
@@ -40,5 +41,5 @@ void cewrapper::CheckStatus(DWORD status, const wchar_t *action)
         return;
 
     OutputErrorMessage(status, action);
-    abort();
+    throw std::exception("abort");
 }

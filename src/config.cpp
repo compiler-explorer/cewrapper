@@ -73,7 +73,13 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
 
 std::wstring utf8str_to_wstr(std::string_view utf8str)
 {
-    wchar_t *buffer = static_cast<wchar_t *>(malloc(utf8str.length() * sizeof(wchar_t)));
+    size_t buffer_size = (utf8str.length() + 1) * sizeof(wchar_t);
+    wchar_t *buffer = static_cast<wchar_t *>(malloc(buffer_size));
+    if (buffer == nullptr)
+        throw std::exception("Not enough memory to allocate a buffer");
+
+    memset(buffer, 0, buffer_size);
+
     int convertedChars = MultiByteToWideChar(CP_UTF8, 0, utf8str.data(), static_cast<int>(utf8str.length()),
                                              reinterpret_cast<wchar_t *>(buffer), static_cast<int>(utf8str.length()));
     if (convertedChars <= 0)
