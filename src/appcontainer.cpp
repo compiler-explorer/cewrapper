@@ -1,4 +1,5 @@
 #include "../include/appcontainer.hpp"
+#include "../include/checks.hpp"
 #include <iostream>
 
 void cewrapper::AppContainer::CreateContainer()
