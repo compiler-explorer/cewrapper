@@ -14,8 +14,12 @@ void cewrapper::AppContainer::CreateContainer()
 
     if (FAILED(hr))
     {
-        if (config.debugging)
+        if (config.debugging) {
             std::wcerr << "CreateAppContainerProfile or DeriveAppContainerSidFromAppContainerName - Failed with " << hr << "\n";
+
+            if (config.extra_debugging)
+                OutputErrorMessage(GetLastError(), "CreateAppContainerProfile");
+        }
         abort();
     }
 }
