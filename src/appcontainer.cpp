@@ -2,9 +2,36 @@
 #include "../include/checks.hpp"
 #include <iostream>
 
+#include <lsalookup.h>
+#include <ntsecapi.h>
+
+void CreateCapabilitySID(PSID_AND_ATTRIBUTES sids, size_t idx, WELL_KNOWN_SID_TYPE sidtype)
+{
+    sids[idx].Attributes = SE_GROUP_ENABLED;
+
+    // https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createwellknownsid
+    // https://learn.microsoft.com/en-us/windows/win32/api/winnt/ne-winnt-well_known_sid_type
+
+    DWORD sidsize = 68;
+    sids[idx].Sid = static_cast<PSID>(malloc(sidsize));
+
+    BOOL err = CreateWellKnownSid(sidtype, nullptr, sids[idx].Sid, &sidsize);
+    if (err == 0)
+    {
+        cewrapper::OutputErrorMessage(GetLastError(), L"CreateWellKnownSid");
+        abort();
+    }
+}
+
 void cewrapper::AppContainer::CreateContainer()
 {
-    HRESULT hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", nullptr, 0, &sec_cap.AppContainerSid);
+    sec_cap.Capabilities = new SID_AND_ATTRIBUTES[1];
+    sec_cap.CapabilityCount = 1;
+
+    CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityPrivateNetworkClientServerSid);
+
+    HRESULT hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", sec_cap.Capabilities,
+                                           sec_cap.CapabilityCount, &sec_cap.AppContainerSid);
     if (HRESULT_CODE(hr) == ERROR_ALREADY_EXISTS)
     {
        // todo: should actually delete it first, because we recreate it each time...
