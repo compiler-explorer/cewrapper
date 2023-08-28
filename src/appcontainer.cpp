@@ -28,7 +28,7 @@ void cewrapper::AppContainer::CreateContainer()
     sec_cap.Capabilities = new SID_AND_ATTRIBUTES[1];
     sec_cap.CapabilityCount = 1;
 
-    CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityPrivateNetworkClientServerSid);
+    CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
 
     HRESULT hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", sec_cap.Capabilities,
                                            sec_cap.CapabilityCount, &sec_cap.AppContainerSid);
