@@ -15,6 +15,7 @@ class AppContainer
     SECURITY_CAPABILITIES sec_cap = {};
     void CreateContainer();
     void DestroyContainer();
+    void InitializeCapabilities();
 
     public:
     AppContainer(const Config config);

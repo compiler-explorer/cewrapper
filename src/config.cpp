@@ -58,6 +58,11 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
             this->suspend_after_start = true;
             arg_idx++;
         }
+        else if (arg.compare(L"--wait") == 0)
+        {
+            this->wait_before_spawn = true;
+            arg_idx++;
+        }
         else
         {
             break;
@@ -96,7 +101,7 @@ void cewrapper::Config::loadFromFile(const std::wstring_view file)
 {
     using json = nlohmann::json;
 
-    std::ifstream jsonfile(file);
+    std::ifstream jsonfile(file.data());
     json data = json::parse(jsonfile);
 
     this->use_appcontainer = data.value("use_appcontainer", true);

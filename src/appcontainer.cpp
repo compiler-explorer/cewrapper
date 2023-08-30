@@ -5,6 +5,32 @@
 #include <lsalookup.h>
 #include <ntsecapi.h>
 
+// https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-derivecapabilitysidsfromname
+typedef BOOL(WINAPI *DeriveCapabilitySidsFromNameImpl)(LPCWSTR CapName,
+                                                       PSID **CapabilityGroupSids,
+                                                       DWORD *CapabilityGroupSidCount,
+                                                       PSID **CapabilitySids,
+                                                       DWORD *CapabilitySidCount);
+
+DeriveCapabilitySidsFromNameImpl _DeriveCapabilitySidsFromName = 
+    reinterpret_cast<DeriveCapabilitySidsFromNameImpl>(GetProcAddress(GetModuleHandle(L"KernelBase.dll"), "DeriveCapabilitySidsFromName"));
+
+struct CapSidsArray
+{
+    public:
+    PSID *sids = nullptr;
+    DWORD count = 0;
+
+    ~CapSidsArray()
+    {
+        for (size_t i = 0; i < count; i++)
+        {
+            LocalFree(sids[i]);
+        }
+        LocalFree(sids);
+    }
+};
+
 void CreateCapabilitySID(PSID_AND_ATTRIBUTES sids, size_t idx, WELL_KNOWN_SID_TYPE sidtype)
 {
     sids[idx].Attributes = SE_GROUP_ENABLED;
@@ -12,7 +38,7 @@ void CreateCapabilitySID(PSID_AND_ATTRIBUTES sids, size_t idx, WELL_KNOWN_SID_TY
     // https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createwellknownsid
     // https://learn.microsoft.com/en-us/windows/win32/api/winnt/ne-winnt-well_known_sid_type
 
-    DWORD sidsize = 68;
+    DWORD sidsize = SECURITY_MAX_SID_SIZE;
     sids[idx].Sid = static_cast<PSID>(malloc(sidsize));
 
     BOOL err = CreateWellKnownSid(sidtype, nullptr, sids[idx].Sid, &sidsize);
@@ -23,33 +49,76 @@ void CreateCapabilitySID(PSID_AND_ATTRIBUTES sids, size_t idx, WELL_KNOWN_SID_TY
     }
 }
 
-void cewrapper::AppContainer::CreateContainer()
+void CreateCapabilitySIDFromName(PSID_AND_ATTRIBUTES sids, size_t idx, std::wstring name)
+{
+    CapSidsArray groupSidsArr;
+    CapSidsArray sidsArr;
+
+    cewrapper::CheckWin32(_DeriveCapabilitySidsFromName(name.c_str(), &groupSidsArr.sids, &groupSidsArr.count, &sidsArr.sids,
+                                             &sidsArr.count),
+               L"_DeriveCapabilitySidsFromName");
+
+    if (sidsArr.count == 0)
+    {
+        std::wcerr << L"_DeriveCapabilitySidsFromName returned an empty SID array\n";
+        abort();
+    }
+
+    DWORD sidsize = SECURITY_MAX_SID_SIZE;
+    sids[idx].Sid = static_cast<PSID>(malloc(sidsize));
+    sids[idx].Attributes = SE_GROUP_ENABLED;
+
+    CopySid(sidsize, sids[idx].Sid, sidsArr.sids[0]);
+}
+
+void cewrapper::AppContainer::InitializeCapabilities()
 {
     sec_cap.Capabilities = new SID_AND_ATTRIBUTES[1];
     sec_cap.CapabilityCount = 1;
 
-    CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
+    // https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh780593(v=win.10)#diagnostic-tool-for-network-isolation
+    // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
+    // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientServerSid);
+    // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityPrivateNetworkClientServerSid);
+
+
+    // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55
+    // 0xC0000201
+    // STATUS_NETWORK_OPEN_RESTRICTION
+    // A remote open failed because the network open restrictions were not satisfied.
+
+    CreateCapabilitySIDFromName(sec_cap.Capabilities, 0, L"remoteFileAccess");
+}
+
+void cewrapper::AppContainer::CreateContainer()
+{
+    this->InitializeCapabilities();
 
     HRESULT hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", sec_cap.Capabilities,
                                            sec_cap.CapabilityCount, &sec_cap.AppContainerSid);
     if (HRESULT_CODE(hr) == ERROR_ALREADY_EXISTS)
     {
-       // todo: should actually delete it first, because we recreate it each time...
-        if (config.extra_debugging)
-           std::wcerr << "CreateAppContainerProfile - ALREADY_EXISTS, deriving from profile\n";
-        hr = DeriveAppContainerSidFromAppContainerName(L"cesandbox", &sec_cap.AppContainerSid);
+        if (config.debugging)
+            std::wcerr << "AppContainer " << this->name.c_str() << " somehow already existed, deleting and recreating...\n";
+        // this really should not be happening. Only happens in case of weird crash and if we get the exact same PID
+        this->DestroyContainer();
+        hr = CreateAppContainerProfile(this->name.c_str(), L"cesandbox", L"cesandbox", sec_cap.Capabilities,
+                                               sec_cap.CapabilityCount, &sec_cap.AppContainerSid);
     }
 
     if (FAILED(hr))
     {
         if (config.debugging) {
-            std::wcerr << "CreateAppContainerProfile or DeriveAppContainerSidFromAppContainerName - Failed with " << hr << "\n";
+            std::wcerr << "CreateAppContainerProfile - Failed with " << hr << "\n";
 
             if (config.extra_debugging)
                 OutputErrorMessage(GetLastError(), L"CreateAppContainerProfile");
         }
         abort();
     }
+
+    if (config.debugging)
+        std::wcerr << "AppContainer created: " << this->name.c_str() << "\n";
 }
 
 void cewrapper::AppContainer::DestroyContainer()

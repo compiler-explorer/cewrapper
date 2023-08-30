@@ -99,6 +99,11 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
     else
     {
         GetExitCodeProcess(pi.hProcess, &app_exit_code);
+
+        if (config.extra_debugging)
+        {
+            std::wcerr << "Application exited with code: " << std::hex << app_exit_code << "\n";
+        }
     }
 
     CloseHandle(pi.hProcess);
@@ -165,6 +170,8 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
         cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
     }
 
+    // todo: revoke access from the home path after we're done executing if the path keeps existing (should actually just be deleted, so revoking really isn't needed)
+
     for (auto &allowed : config.allowed_dirs)
     {
         if (config.debugging)
@@ -178,6 +185,9 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
             std::wcerr << "granting access to registry: " << allowed.path << ", r" << allowed.rights << "\n";
         cewrapper::grant_access_to_registry(container.getSid(), allowed.path.data(), allowed.rights, allowed.type);
     }
+
+    if (config.wait_before_spawn)
+        Sleep(10000);
 
     return SpawnProcess(job, si);
 }
