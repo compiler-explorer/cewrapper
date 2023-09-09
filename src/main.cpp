@@ -85,7 +85,7 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
         }
     }
 
-    DWORD app_exit_code = std::to_underlying(SpecialExitCode::UnknownErrorWhileWaitingOnProcess);
+    DWORD app_exit_code = (DWORD)SpecialExitCode::UnknownErrorWhileWaitingOnProcess;
 
     if (maxtime > 0 && timespent >= maxtime)
     {
@@ -209,7 +209,7 @@ int wmain(int argc, wchar_t *argv[])
         std::wcerr << L"Too few arguments\n";
         std::wcerr << L"Usage: cewrapper.exe [-v] [--config=/full/path/to/config.json] [--home=/preferred/cwdpath] "
                       L"[--time_limit=1] ExePath [args]\n";
-        return std::to_underlying(SpecialExitCode::NotEnoughArgs);
+        return (DWORD)SpecialExitCode::NotEnoughArgs;
     }
 
     try
@@ -221,12 +221,12 @@ int wmain(int argc, wchar_t *argv[])
         if (cewrapper::Config::get().debugging)
             std::cerr << e.what() << "\n";
         std::wcerr << L"Invalid arguments\n";
-        return std::to_underlying(SpecialExitCode::InvalidArgs);
+        return (DWORD)SpecialExitCode::InvalidArgs;
     }
 
     cewrapper::Job job(cewrapper::Config::get());
 
-    DWORD app_exit_code = std::to_underlying(SpecialExitCode::ErrorWhenExecutingProcess);
+    DWORD app_exit_code = (DWORD)SpecialExitCode::ErrorWhenExecutingProcess;
     try
     {
         if (cewrapper::Config::get().use_appcontainer)
