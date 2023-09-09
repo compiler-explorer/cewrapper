@@ -40,14 +40,19 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
     if (config.extra_debugging)
         std::wcerr << "Running " << config.progid.c_str() << " " << cmdline.data() << "\n";
 
-    // todo: find out the precedence of si.StartupInfo.dwFlags and those passed directly to CreateProcess
-    si.StartupInfo.dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED;
+    // sometimes a desktop is required, otherwise we can the process might end up with a 0xc0000142 exit code (STATUS_DLL_INIT_FAILED)
+    // https://comp.os.ms-windows.programmer.win32.narkive.com/cBqcgpKg/createprocessw-in-a-service-fails-with-error-c0000142-dll-initialization-failed-due-to-desktop
+    // https://www.betaarchive.com/wiki/index.php/Microsoft_KB_Archive/165194
+    wchar_t *desktop = static_cast<wchar_t *>(malloc(64));
+    lstrcpyW(desktop, L"winsta0\\default");
+    si.StartupInfo.lpDesktop = desktop;
 
     PROCESS_INFORMATION pi = {};
     if (hUserToken == nullptr)
     {
         cewrapper::CheckWin32(CreateProcessW(config.progid.c_str(), cmdline.data(), nullptr, nullptr, false,
-                                             EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT, nullptr,
+                                             EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED,
+                                             nullptr,
                                              nullptr, &si.StartupInfo, &pi),
                               L"CreateProcessW");
     }
@@ -80,7 +85,7 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
         }
     }
 
-    DWORD app_exit_code = (DWORD)SpecialExitCode::UnknownErrorWhileWaitingOnProcess;
+    DWORD app_exit_code = std::to_underlying(SpecialExitCode::UnknownErrorWhileWaitingOnProcess);
 
     if (maxtime > 0 && timespent >= maxtime)
     {
@@ -109,6 +114,8 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 
+    free(desktop);
+
     return app_exit_code;
 }
 
@@ -122,8 +129,8 @@ DWORD execute_using_lower_rights(const cewrapper::Job &job)
                           L"SaferComputeTokenFromLevel");
 
     STARTUPINFOEX si;
-    ZeroMemory(&si, sizeof(STARTUPINFO));
-    si.StartupInfo.cb = sizeof(STARTUPINFO);
+    ZeroMemory(&si, sizeof(STARTUPINFOEX));
+    si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 
     DWORD app_exit_code = SpawnProcess(job, si, hToken);
 
@@ -154,23 +161,20 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
         // todo: do we need to use this at some point? -> https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-deleteprocthreadattributelist
     }
 
+    std::wstring home_dir;
+
     if (config.home_set)
     {
-        auto &dir = config.home;
-        if (config.debugging)
-            std::wcerr << "granting access to: " << dir << "\n";
-        cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+        home_dir = config.home;
     }
     else
     {
-        // access to its own directory
-        auto dir = std::filesystem::path(config.progid).parent_path().wstring();
-        if (config.debugging)
-            std::wcerr << "granting access to: " << dir << "\n";
-        cewrapper::grant_access_to_path(container.getSid(), dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+        home_dir = std::filesystem::path(config.progid).parent_path().wstring();
     }
 
-    // todo: revoke access from the home path after we're done executing if the path keeps existing (should actually just be deleted, so revoking really isn't needed)
+    if (config.debugging)
+        std::wcerr << "granting access to: " << home_dir << "\n";
+    cewrapper::grant_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
 
     for (auto &allowed : config.allowed_dirs)
     {
@@ -182,14 +186,20 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
     for (auto &allowed : config.allowed_registry)
     {
         if (config.debugging)
-            std::wcerr << "granting access to registry: " << allowed.path << ", r" << allowed.rights << "\n";
+            std::wcerr << "granting access to registry: " << allowed.path << ", r" << std::hex << allowed.rights << "\n";
         cewrapper::grant_access_to_registry(container.getSid(), allowed.path.data(), allowed.rights, allowed.type);
     }
 
     if (config.wait_before_spawn)
-        Sleep(10000);
+         Sleep(5000);
 
-    return SpawnProcess(job, si);
+    auto processExitCode = SpawnProcess(job, si);
+
+    if (config.debugging)
+        std::wcerr << "revoking access to: " << home_dir << "\n";
+    cewrapper::remove_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+
+    return processExitCode;
 }
 
 int wmain(int argc, wchar_t *argv[])
@@ -199,7 +209,7 @@ int wmain(int argc, wchar_t *argv[])
         std::wcerr << L"Too few arguments\n";
         std::wcerr << L"Usage: cewrapper.exe [-v] [--config=/full/path/to/config.json] [--home=/preferred/cwdpath] "
                       L"[--time_limit=1] ExePath [args]\n";
-        return (int)SpecialExitCode::NotEnoughArgs;
+        return std::to_underlying(SpecialExitCode::NotEnoughArgs);
     }
 
     try
@@ -211,19 +221,27 @@ int wmain(int argc, wchar_t *argv[])
         if (cewrapper::Config::get().debugging)
             std::cerr << e.what() << "\n";
         std::wcerr << L"Invalid arguments\n";
-        return (int)SpecialExitCode::InvalidArgs;
+        return std::to_underlying(SpecialExitCode::InvalidArgs);
     }
 
     cewrapper::Job job(cewrapper::Config::get());
 
-    DWORD app_exit_code{};
-    if (cewrapper::Config::get().use_appcontainer)
+    DWORD app_exit_code = std::to_underlying(SpecialExitCode::ErrorWhenExecutingProcess);
+    try
     {
-        app_exit_code = execute_using_appcontainer(job);
+        if (cewrapper::Config::get().use_appcontainer)
+        {
+            app_exit_code = execute_using_appcontainer(job);
+        }
+        else
+        {
+            app_exit_code = execute_using_lower_rights(job);
+        }
     }
-    else
+    catch (std::exception &e)
     {
-        app_exit_code = execute_using_lower_rights(job);
+        if (cewrapper::Config::get().debugging)
+            std::cerr << e.what() << "\n";
     }
 
     return app_exit_code;

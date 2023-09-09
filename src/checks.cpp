@@ -43,3 +43,11 @@ void cewrapper::CheckStatus(DWORD status, const wchar_t *action)
     OutputErrorMessage(status, action);
     throw std::exception("abort");
 }
+
+void cewrapper::CheckStatusAllowFail(DWORD status, const wchar_t *action)
+{
+    if (status == ERROR_SUCCESS)
+        return;
+
+    OutputErrorMessage(status, action);
+}

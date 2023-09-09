@@ -77,9 +77,9 @@ void cewrapper::AppContainer::InitializeCapabilities()
     sec_cap.CapabilityCount = 1;
 
     // https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh780593(v=win.10)#diagnostic-tool-for-network-isolation
-    // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
+    //CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
     // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientServerSid);
-    // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityPrivateNetworkClientServerSid);
+    //CreateCapabilitySID(sec_cap.Capabilities, 1, WinCapabilityPrivateNetworkClientServerSid);
 
 
     // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55

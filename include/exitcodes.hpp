@@ -7,5 +7,6 @@ enum class SpecialExitCode : DWORD
     InvalidArgs = 2,
     ProcessTookTooLong = 3,
     ProcessTookTooLongMethod2 = 9,
+    ErrorWhenExecutingProcess = 254,
     UnknownErrorWhileWaitingOnProcess = 255,
 };
