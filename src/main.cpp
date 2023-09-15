@@ -59,8 +59,9 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
     else
     {
         cewrapper::CheckWin32(CreateProcessAsUserW(hUserToken, config.progid.c_str(), cmdline.data(), nullptr, nullptr,
-                                                   false, NORMAL_PRIORITY_CLASS | CREATE_SUSPENDED, nullptr, nullptr,
-                                                   &si.StartupInfo, &pi),
+                                                   false, NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED,
+                                                   nullptr, nullptr,
+                                                   nullptr, &pi),
                               L"CreateProcessAsUserW");
     }
 
@@ -128,8 +129,7 @@ DWORD execute_using_lower_rights(const cewrapper::Job &job)
     cewrapper::CheckWin32(SaferComputeTokenFromLevel(hAuthzLevel, NULL, &hToken, 0, NULL),
                           L"SaferComputeTokenFromLevel");
 
-    STARTUPINFOEX si;
-    ZeroMemory(&si, sizeof(STARTUPINFOEX));
+    STARTUPINFOEX si = {};
     si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 
     DWORD app_exit_code = SpawnProcess(job, si, hToken);
