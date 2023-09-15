@@ -10,8 +10,8 @@ namespace cewrapper
 
 struct Config
 {
-    bool debugging{false};
-    bool extra_debugging{false};
+    bool debugging{true};
+    bool extra_debugging{true};
     bool suspend_after_start{};
     int time_limit_ms{};
     int loopwait_ms{ 500 };
