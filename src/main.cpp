@@ -45,11 +45,11 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
     // https://www.betaarchive.com/wiki/index.php/Microsoft_KB_Archive/165194
     wchar_t *desktop = static_cast<wchar_t *>(malloc(64));
     lstrcpyW(desktop, L"winsta0\\default");
-    si.StartupInfo.lpDesktop = desktop;
 
     PROCESS_INFORMATION pi = {};
     if (hUserToken == nullptr)
     {
+        si.StartupInfo.lpDesktop = desktop;
         cewrapper::CheckWin32(CreateProcessW(config.progid.c_str(), cmdline.data(), nullptr, nullptr, false,
                                              EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED,
                                              nullptr,
