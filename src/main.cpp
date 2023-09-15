@@ -61,7 +61,7 @@ DWORD SpawnProcess(const cewrapper::Job &job, STARTUPINFOEX &si, HANDLE hUserTok
         cewrapper::CheckWin32(CreateProcessAsUserW(hUserToken, config.progid.c_str(), cmdline.data(), nullptr, nullptr,
                                                    false, NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED,
                                                    nullptr, nullptr,
-                                                   nullptr, &pi),
+                                                   &si.StartupInfo, &pi),
                               L"CreateProcessAsUserW");
     }
 
