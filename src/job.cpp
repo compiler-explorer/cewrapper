@@ -22,7 +22,7 @@ cewrapper::Job::Job(const Config config) : config(config)
 
 void cewrapper::Job::ReportOnJob()
 {
-    if (this->config.extra_debugging)
+    if (this->config.extra_debugging || this->config.summary)
     {
         {
             JOBOBJECTINFOCLASS infoclass = JOBOBJECTINFOCLASS::JobObjectExtendedLimitInformation;

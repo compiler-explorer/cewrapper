@@ -42,6 +42,11 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
             this->debugging = true;
             arg_idx++;
         }
+        else if (arg.compare(L"--summary") == 0)
+        {
+            this->summary = true;
+            arg_idx++;
+        }
         else if (arg.starts_with(L"--config="))
         {
             this->loadFromFile(arg.substr(9));
