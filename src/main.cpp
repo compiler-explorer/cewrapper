@@ -174,7 +174,7 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
 
     if (config.debugging)
         std::wcerr << "granting access to: " << home_dir << "\n";
-    cewrapper::grant_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+    cewrapper::grant_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL);
 
     for (auto &allowed : config.allowed_dirs)
     {
@@ -197,7 +197,7 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
 
     if (config.debugging)
         std::wcerr << "revoking access to: " << home_dir << "\n";
-    cewrapper::remove_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE);
+    cewrapper::remove_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL);
 
     return processExitCode;
 }
