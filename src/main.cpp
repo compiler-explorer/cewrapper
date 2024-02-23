@@ -199,6 +199,13 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
         std::wcerr << "revoking access to: " << home_dir << "\n";
     cewrapper::remove_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL);
 
+    for (auto &allowed : config.allowed_dirs)
+    {
+        if (config.debugging)
+            std::wcerr << "revoking access to: " << allowed.path << "\n";
+        cewrapper::remove_access_to_path(container.getSid(), allowed.path.data(), allowed.rights);
+    }
+
     return processExitCode;
 }
 
