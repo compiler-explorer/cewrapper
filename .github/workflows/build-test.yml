@@ -27,7 +27,7 @@ jobs:
 
   deploy:
     needs: [build]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Download the built distribution
