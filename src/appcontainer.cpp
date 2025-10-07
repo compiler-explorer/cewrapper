@@ -74,7 +74,7 @@ void CreateCapabilitySIDFromName(PSID_AND_ATTRIBUTES sids, size_t idx, std::wstr
 void cewrapper::AppContainer::InitializeCapabilities()
 {
     sec_cap.Capabilities = new SID_AND_ATTRIBUTES[2];
-    sec_cap.CapabilityCount = 2;
+    sec_cap.CapabilityCount = 1;
 
     // https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh780593(v=win.10)#diagnostic-tool-for-network-isolation
     //CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
@@ -88,9 +88,6 @@ void cewrapper::AppContainer::InitializeCapabilities()
     // A remote open failed because the network open restrictions were not satisfied.
 
     CreateCapabilitySIDFromName(sec_cap.Capabilities, 0, L"remoteFileAccess");
-
-    // lpacAppExperience allows access to user-mode filesystems (like WinFSP drives)
-    CreateCapabilitySIDFromName(sec_cap.Capabilities, 1, L"lpacAppExperience");
 }
 
 void cewrapper::AppContainer::CreateContainer()
