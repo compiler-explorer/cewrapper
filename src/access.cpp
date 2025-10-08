@@ -26,32 +26,6 @@ void cewrapper::grant_access_to_path(wchar_t *container_sid, wchar_t *dir, uint3
                            L"SetNamedSecurityInfoW");
 }
 
-void cewrapper::allow_access_to_nul()
-{
-    wchar_t allpack[] = L"ALL APPLICATION PACKAGES\0\0";
-    EXPLICIT_ACCESSW access = {};
-    {
-        access.grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
-        access.grfAccessMode = GRANT_ACCESS;
-        access.grfInheritance = NO_INHERITANCE;
-        access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-        access.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
-        access.Trustee.ptstrName = allpack;
-    }
-
-    wchar_t path[] = L"\\\\.\\NUL";
-    PSECURITY_DESCRIPTOR pSecurityDescriptor = nullptr;
-    ACL *prevAcl = nullptr;
-    cewrapper::CheckStatus(GetNamedSecurityInfoW(path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr,
-                                                 nullptr, &prevAcl, nullptr, &pSecurityDescriptor),
-                           L"GetNamedSecurityInfoW");
-
-    ACL *newAcl = nullptr;
-    cewrapper::CheckStatus(SetEntriesInAclW(1, &access, prevAcl, &newAcl), L"SetEntriesInAclW");
-    cewrapper::CheckStatusAllowFail(SetNamedSecurityInfoW(path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, newAcl, nullptr),
-                           L"SetNamedSecurityInfoW");
-}
-
 void cewrapper::remove_access_to_path(wchar_t *container_sid, wchar_t *dir, uint32_t permissions)
 {
     EXPLICIT_ACCESSW access = {};

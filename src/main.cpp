@@ -172,8 +172,6 @@ DWORD execute_using_appcontainer(const cewrapper::Job &job)
         home_dir = std::filesystem::path(config.progid).parent_path().wstring();
     }
 
-    cewrapper::allow_access_to_nul();
-
     if (config.debugging)
         std::wcerr << "granting access to: " << home_dir << "\n";
     cewrapper::grant_access_to_path(container.getSid(), home_dir.data(), GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL);
