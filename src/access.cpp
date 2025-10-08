@@ -26,8 +26,9 @@ void cewrapper::grant_access_to_path(wchar_t *container_sid, wchar_t *dir, uint3
                            L"SetNamedSecurityInfoW");
 }
 
-void cewrapper::allow_access_to_nul(wchar_t *container_sid)
+void cewrapper::allow_access_to_nul()
 {
+    wchar_t allpack[] = L"ALL APPLICATION PACKAGES\0";
     EXPLICIT_ACCESSW access = {};
     {
         access.grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
@@ -35,7 +36,7 @@ void cewrapper::allow_access_to_nul(wchar_t *container_sid)
         access.grfInheritance = NO_INHERITANCE;
         access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
         access.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
-        access.Trustee.ptstrName = container_sid;
+        access.Trustee.ptstrName = allpack;
     }
 
     wchar_t path[] = L"\\\\.\\NUL";
