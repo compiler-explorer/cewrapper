@@ -28,7 +28,7 @@ void cewrapper::grant_access_to_path(wchar_t *container_sid, wchar_t *dir, uint3
 
 void cewrapper::allow_access_to_nul()
 {
-    wchar_t allpack[] = L"ALL APPLICATION PACKAGES\0";
+    wchar_t allpack[] = L"ALL APPLICATION PACKAGES\0\0";
     EXPLICIT_ACCESSW access = {};
     {
         access.grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
