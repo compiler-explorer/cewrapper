@@ -38,7 +38,7 @@ void cewrapper::allow_access_to_nul(wchar_t *container_sid)
         access.Trustee.ptstrName = container_sid;
     }
 
-    const char *path = "\\\\.\\NUL";
+    const wchar_t *path = L"\\\\.\\NUL";
     PSECURITY_DESCRIPTOR pSecurityDescriptor = nullptr;
     ACL *prevAcl = nullptr;
     cewrapper::CheckStatus(GetNamedSecurityInfoW(path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr,
