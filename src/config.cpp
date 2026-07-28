@@ -68,14 +68,29 @@ void cewrapper::Config::initFromArguments(int argc, wchar_t *argv[])
             this->wait_before_spawn = true;
             arg_idx++;
         }
+        else if (arg.compare(L"--prepare-nul") == 0)
+        {
+            this->prepare_nul = true;
+            arg_idx++;
+        }
         else
         {
             break;
         }
     }
 
-    this->progid = argv[arg_idx];
     this->args.clear();
+
+    // --prepare-nul is a standalone maintenance mode, everything else needs an executable to run
+    if (arg_idx >= argc)
+    {
+        if (this->prepare_nul)
+            return;
+
+        throw std::exception("No executable given");
+    }
+
+    this->progid = argv[arg_idx];
     arg_idx += 1;
     for (; arg_idx < argc; ++arg_idx)
         this->args.push_back(argv[arg_idx]);

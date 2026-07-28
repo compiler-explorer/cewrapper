@@ -21,6 +21,7 @@ struct Config
     bool home_set{};
     bool use_appcontainer{ true };
     bool wait_before_spawn{};
+    bool prepare_nul{};
 
     int pids_max{};
     int64_t mem_max{};

@@ -216,6 +216,7 @@ int wmain(int argc, wchar_t *argv[])
         std::wcerr << L"Too few arguments\n";
         std::wcerr << L"Usage: cewrapper.exe [-v] [--config=/full/path/to/config.json] [--home=/preferred/cwdpath] "
                       L"[--time_limit=1] ExePath [args]\n";
+        std::wcerr << L"       cewrapper.exe --prepare-nul   (run elevated, once per boot)\n";
         return (DWORD)SpecialExitCode::NotEnoughArgs;
     }
 
@@ -229,6 +230,24 @@ int wmain(int argc, wchar_t *argv[])
             std::cerr << e.what() << "\n";
         std::wcerr << L"Invalid arguments\n";
         return (DWORD)SpecialExitCode::InvalidArgs;
+    }
+
+    if (cewrapper::Config::get().prepare_nul)
+    {
+        try
+        {
+            cewrapper::grant_access_to_nul_device();
+        }
+        catch (std::exception &)
+        {
+            std::wcerr << L"Could not grant AppContainer access to the NUL device, is this running elevated?\n";
+            return (DWORD)SpecialExitCode::ErrorPreparingNulDevice;
+        }
+
+        if (cewrapper::Config::get().debugging)
+            std::wcerr << L"Granted app package access to the NUL device\n";
+
+        return 0;
     }
 
     cewrapper::Job job(cewrapper::Config::get());
