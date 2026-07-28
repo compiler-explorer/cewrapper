@@ -1,6 +1,7 @@
 #include "../include/access.hpp"
 #include "../include/checks.hpp"
 #include <aclapi.h>
+#include <iostream>
 #include <sddl.h>
 #include <vector>
 
@@ -16,6 +17,8 @@
 // Must be run elevated (WRITE_DAC on \Device\Null), once per boot, before any sandboxed process starts.
 void cewrapper::grant_access_to_nul_device()
 {
+    dump_nul_device_dacl(L"before");
+
     // S-1-15-2-1 is ALL APPLICATION PACKAGES, S-1-15-2-2 is ALL RESTRICTED APPLICATION PACKAGES (LPAC)
     PSID all_packages = nullptr;
     PSID all_restricted_packages = nullptr;
@@ -65,6 +68,41 @@ void cewrapper::grant_access_to_nul_device()
     LocalFree(newAcl);
     LocalFree(all_packages);
     LocalFree(all_restricted_packages);
+    CloseHandle(hnul);
+
+    // SetKernelObjectSecurity returning success is not proof the ACE landed on the device object, so
+    // read it back through a fresh handle and print it
+    dump_nul_device_dacl(L"after");
+}
+
+void cewrapper::dump_nul_device_dacl(const wchar_t *when)
+{
+    HANDLE hnul = CreateFileW(L"\\\\.\\NUL", READ_CONTROL, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              nullptr, OPEN_EXISTING, 0, nullptr);
+    if (hnul == INVALID_HANDLE_VALUE)
+    {
+        std::wcerr << L"NUL DACL (" << when << L"): could not open for READ_CONTROL, err=" << GetLastError() << L"\n";
+        return;
+    }
+
+    DWORD sd_size = 0;
+    GetKernelObjectSecurity(hnul, DACL_SECURITY_INFORMATION, nullptr, 0, &sd_size);
+    std::vector<BYTE> sd_buffer(sd_size);
+    if (!GetKernelObjectSecurity(hnul, DACL_SECURITY_INFORMATION, sd_buffer.data(), sd_size, &sd_size))
+    {
+        std::wcerr << L"NUL DACL (" << when << L"): GetKernelObjectSecurity failed, err=" << GetLastError() << L"\n";
+        CloseHandle(hnul);
+        return;
+    }
+
+    wchar_t *sddl = nullptr;
+    if (ConvertSecurityDescriptorToStringSecurityDescriptorW(sd_buffer.data(), SDDL_REVISION_1,
+                                                             DACL_SECURITY_INFORMATION, &sddl, nullptr))
+    {
+        std::wcerr << L"NUL DACL (" << when << L"): " << sddl << L"\n";
+        LocalFree(sddl);
+    }
+
     CloseHandle(hnul);
 }
 
