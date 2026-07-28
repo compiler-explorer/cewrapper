@@ -2,6 +2,7 @@
 
 #include <string>
 #include <userenv.h>
+#include <vector>
 #include "config.hpp"
 
 namespace cewrapper
@@ -13,6 +14,8 @@ class AppContainer
     std::wstring name;
     const Config config;
     SECURITY_CAPABILITIES sec_cap = {};
+    // backing storage for sec_cap.Capabilities, must outlive sec_cap's use
+    std::vector<SID_AND_ATTRIBUTES> capabilities;
     void CreateContainer();
     void DestroyContainer();
     void InitializeCapabilities();

@@ -31,17 +31,18 @@ struct CapSidsArray
     }
 };
 
-void CreateCapabilitySID(PSID_AND_ATTRIBUTES sids, size_t idx, WELL_KNOWN_SID_TYPE sidtype)
+void AddCapabilitySID(std::vector<SID_AND_ATTRIBUTES> &sids, WELL_KNOWN_SID_TYPE sidtype)
 {
-    sids[idx].Attributes = SE_GROUP_ENABLED;
+    SID_AND_ATTRIBUTES &sid = sids.emplace_back();
+    sid.Attributes = SE_GROUP_ENABLED;
 
     // https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createwellknownsid
     // https://learn.microsoft.com/en-us/windows/win32/api/winnt/ne-winnt-well_known_sid_type
 
     DWORD sidsize = SECURITY_MAX_SID_SIZE;
-    sids[idx].Sid = static_cast<PSID>(malloc(sidsize));
+    sid.Sid = static_cast<PSID>(malloc(sidsize));
 
-    BOOL err = CreateWellKnownSid(sidtype, nullptr, sids[idx].Sid, &sidsize);
+    BOOL err = CreateWellKnownSid(sidtype, nullptr, sid.Sid, &sidsize);
     if (err == 0)
     {
         cewrapper::OutputErrorMessage(GetLastError(), L"CreateWellKnownSid");
@@ -49,7 +50,7 @@ void CreateCapabilitySID(PSID_AND_ATTRIBUTES sids, size_t idx, WELL_KNOWN_SID_TY
     }
 }
 
-void CreateCapabilitySIDFromName(PSID_AND_ATTRIBUTES sids, size_t idx, std::wstring name)
+void AddCapabilitySIDFromName(std::vector<SID_AND_ATTRIBUTES> &sids, std::wstring name)
 {
     CapSidsArray groupSidsArr;
     CapSidsArray sidsArr;
@@ -65,21 +66,24 @@ void CreateCapabilitySIDFromName(PSID_AND_ATTRIBUTES sids, size_t idx, std::wstr
     }
 
     DWORD sidsize = SECURITY_MAX_SID_SIZE;
-    sids[idx].Sid = static_cast<PSID>(malloc(sidsize));
-    sids[idx].Attributes = SE_GROUP_ENABLED;
+    SID_AND_ATTRIBUTES &sid = sids.emplace_back();
+    sid.Sid = static_cast<PSID>(malloc(sidsize));
+    sid.Attributes = SE_GROUP_ENABLED;
 
-    CopySid(sidsize, sids[idx].Sid, sidsArr.sids[0]);
+    CopySid(sidsize, sid.Sid, sidsArr.sids[0]);
 }
 
 void cewrapper::AppContainer::InitializeCapabilities()
 {
-    sec_cap.Capabilities = new SID_AND_ATTRIBUTES[2];
-    sec_cap.CapabilityCount = 1;
+    // Each Add* call appends one capability; the count below is derived from the
+    // list, so capabilities can be added or removed without keeping indices and a
+    // hardcoded count in sync.
+    capabilities.clear();
 
     // https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh780593(v=win.10)#diagnostic-tool-for-network-isolation
-    //CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientSid);
-    // CreateCapabilitySID(sec_cap.Capabilities, 0, WinCapabilityInternetClientServerSid);
-    //CreateCapabilitySID(sec_cap.Capabilities, 1, WinCapabilityPrivateNetworkClientServerSid);
+    // AddCapabilitySID(capabilities, WinCapabilityInternetClientSid);
+    // AddCapabilitySID(capabilities, WinCapabilityInternetClientServerSid);
+    // AddCapabilitySID(capabilities, WinCapabilityPrivateNetworkClientServerSid);
 
 
     // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55
@@ -87,7 +91,10 @@ void cewrapper::AppContainer::InitializeCapabilities()
     // STATUS_NETWORK_OPEN_RESTRICTION
     // A remote open failed because the network open restrictions were not satisfied.
 
-    CreateCapabilitySIDFromName(sec_cap.Capabilities, 0, L"remoteFileAccess");
+    AddCapabilitySIDFromName(capabilities, L"remoteFileAccess");
+
+    sec_cap.Capabilities = capabilities.data();
+    sec_cap.CapabilityCount = static_cast<DWORD>(capabilities.size());
 }
 
 void cewrapper::AppContainer::CreateContainer()
